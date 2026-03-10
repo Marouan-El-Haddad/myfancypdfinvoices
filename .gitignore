@@ -1,0 +1,6 @@
+target/
+tomcat.*/
+dependency-reduced-pom.xml
+.vscode/
+*.iml
+.idea/
