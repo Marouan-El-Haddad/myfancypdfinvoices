@@ -13,8 +13,8 @@ import java.io.IOException;
 
 public class MyFancyPdfInvoiceServlet extends HttpServlet {
 
-    private final InvoiceService invoiceService = new InvoiceService();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final transient InvoiceService invoiceService = new InvoiceService();
+    private final transient ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     protected void doGet(final HttpServletRequest request, final HttpServletResponse response) {
@@ -41,19 +41,24 @@ public class MyFancyPdfInvoiceServlet extends HttpServlet {
 
     @Override
     protected void doPost(final HttpServletRequest request, final HttpServletResponse response) {
-        switch (request.getRequestURI().toLowerCase()) {
-            case "/invoices" -> {
-                var userId = request.getParameter("user_id");
-                var amount = Integer.valueOf(request.getParameter("amount"));
-                var invoice = invoiceService.create(userId, amount);
-                try {
-                    writeResponse(response, "application/json; charset=UTF-8",
-                            objectMapper.writeValueAsString(invoice));
-                } catch (JsonProcessingException _) {
-                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                }
+        if (request.getRequestURI().equalsIgnoreCase("/invoices")) {
+            var userId = request.getParameter("user_id");
+            int amount;
+            try {
+                amount = Integer.parseInt(request.getParameter("amount"));
+            } catch (NumberFormatException _) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                return;
             }
-            default -> response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            var invoice = invoiceService.create(userId, amount);
+            try {
+                writeResponse(response, "application/json; charset=UTF-8",
+                        objectMapper.writeValueAsString(invoice));
+            } catch (JsonProcessingException _) {
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            }
+        } else {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
         }
     }
 
